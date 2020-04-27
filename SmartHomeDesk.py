@@ -221,13 +221,23 @@ def onselect(evt):
                                    c.execute(sqliteSentence)
 
                               conn.commit()
-                              addKeyboardListener(commandList, deviceData["id"])
+                              
+                              updateKeyboardCommandList()
 
                     else :
                          messagebox.showerror("Error", "You must write one command")
                          
                else :
-                    messagebox.showerror("Error", "You must select at least of one command splitted by ';'")
+                    if len(rows) == 0:
+                         messagebox.showerror("Error", "You must select at least of one command splitted by ';'")
+
+                    else :
+                         sqliteSentence = "DELETE FROM keywords WHERE deviceId = '{}'".format(deviceData["id"])
+                         c.execute(sqliteSentence)
+                         conn.commit()
+                         
+                         updateKeyboardCommandList()
+
                lastSelec = -1
                
           else :
@@ -252,6 +262,22 @@ def addKeyboardListener(commandList, deviceId):
      elif len(commandList) == 2:
           keyboard.add_hotkey(commandList[0], sendDeviceCommand, args=(deviceId, 'on', {'state': 'true'}))
           keyboard.add_hotkey(commandList[1], sendDeviceCommand, args=(deviceId, 'on', {'state': 'false'}))
+
+def updateKeyboardCommandList():
+     keyboard.unhook_all()
+     try :
+          c.execute('SELECT * FROM keywords')
+          commandTuple = c.fetchall()
+          for command in commandTuple:
+               commandList = []
+               commandList.append(command[1])
+               commandList.append(command[2])
+
+               deviceId = command[0]
+          
+               addKeyboardListener(commandList, deviceId)
+     except :
+          pass
 
 codeValue = StringVar()
 codeValue.trace('w', limitSizeCode)
@@ -299,19 +325,7 @@ try :
 except :
      pass
 
-try :
-     c.execute('SELECT * FROM keywords')
-     commandTuple = c.fetchall()
-     for command in commandTuple:
-          commandList = []
-          commandList.append(command[1])
-          commandList.append(command[2])
-
-          deviceId = command[0]
-          
-          addKeyboardListener(commandList, deviceId)
-except :
-     pass
+updateKeyboardCommandList()
 
 #keyboard.add_hotkey('ctrl+shift+a', sendDeviceCommand, args=("light006", 'on', {'state': 'true'}))
 #keyboard.add_hotkey('ctrl+shift+b', sendDeviceCommand, args=("light006", 'on', {'state': 'false'}))
